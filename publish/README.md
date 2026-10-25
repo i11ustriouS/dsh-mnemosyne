@@ -6,13 +6,13 @@
 
 ```
 仓库：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin
-方式：新增一个 YAML 文件 data/plugins/<owner>__<repo>.yml
+方式：新增一个 YAML 文件 data/plugins/i11ustriouS__<repo>.yml
 效果：README 与 https://awesome-dsh-plugin.com 自动重新生成
 ```
 
 官方要求（摘自 contributing.md）：
 
-- 一个插件一个文件，文件名 `<owner>__<repo>.yml`
+- 一个插件一个文件，文件名 `i11ustriouS__<repo>.yml`
 - `url` 必须与仓库完全一致
 - `name` 是列表里显示的链接文字，格式 `owner/repo`
 - `description.en` 必填（中文可留空，维护者会补）
@@ -45,7 +45,7 @@ gh-proxy.com             → ✅ 可用（仅能读，不能推）
 
 已按官方格式写好：`publish/awesome-dsh-plugin.yml`
 
-**提交前需替换 `<OWNER>`**（你的 GitHub 用户名，共 3 处）。
+**提交前需替换 `i11ustriouS`**（你的 GitHub 用户名，共 3 处）。
 
 ## 恢复网络后要做的
 
@@ -54,15 +54,15 @@ gh-proxy.com             → ✅ 可用（仅能读，不能推）
 git config --global http.proxy http://127.0.0.1:7897
 git config --global https.proxy http://127.0.0.1:7897
 
-# 2) 推仓库（先建好空仓库，替换 <OWNER> 和 <TOKEN>）
-git remote add origin https://<TOKEN>@github.com/<OWNER>/dsh-mnemosyne.git
+# 2) 推仓库（先建好空仓库，替换 i11ustriouS 和 <TOKEN>）
+git remote add origin https://<TOKEN>@github.com/i11ustriouS/dsh-mnemosyne.git
 git push -u origin main
 
 # 3) 打 topic（网页操作，或 gh CLI）
 #    Settings → Topics → 添加 dsh-plugin
 
 # 4) Fork awesome-dsh-plugin，新增投稿文件，提 PR
-#    data/plugins/<OWNER>__dsh-mnemosyne.yml
+#    data/plugins/i11ustriouS__dsh-mnemosyne.yml
 
 # 5) 验证收录
 #    打开 https://awesome-dsh-plugin.com 搜索 dsh-mnemosyne

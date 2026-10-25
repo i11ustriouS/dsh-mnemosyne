@@ -1,15 +1,15 @@
 # Mnemosyne — DSH 官方插件库投稿条目
 #
 # 提交方式：给 awesome-dsh-plugin/awesome-dsh-plugin 提 PR，
-# 新增文件 data/plugins/<owner>__dsh-mnemosyne.yml
+# 新增文件 data/plugins/i11ustriouS__dsh-mnemosyne.yml
 #
-# ⚠️ 提交前必须替换 <OWNER> 为你的 GitHub 用户名（共 2 处），
+# ⚠️ 提交前必须替换 i11ustriouS 为你的 GitHub 用户名（共 2 处），
 #    且 url / name 必须与实际仓库完全一致。
 #
 # 注意：description 含 ": "（冒号+空格）时必须加引号，否则 YAML 解析失败。
 
-url: https://github.com/<OWNER>/dsh-mnemosyne
-name: <OWNER>/dsh-mnemosyne
+url: https://github.com/i11ustriouS/dsh-mnemosyne
+name: i11ustriouS/dsh-mnemosyne
 category: memory
 description:
   en: 'Layered long-term memory: a persona frame and a relevance-ranked memory index are injected each turn while full transcripts stay on disk, with autonomous persona derivation, reversible consolidation, and log compaction.'
@@ -17,4 +17,4 @@ description:
 
 # 可选：市场卡片图标（GitHub 托管的位图 PNG/JPG，不写则回退到作者头像）
 # 本仓库的 icon.svg 是矢量图，不符合要求，故不填。
-# icon: https://raw.githubusercontent.com/<OWNER>/dsh-mnemosyne/main/assets/icon-180.png
+# icon: https://raw.githubusercontent.com/i11ustriouS/dsh-mnemosyne/main/assets/icon-180.png

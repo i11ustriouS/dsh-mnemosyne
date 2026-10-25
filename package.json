@@ -13,13 +13,13 @@
     "context",
     "persona"
   ],
-  "homepage": "https://github.com/<owner>/dsh-mnemosyne#readme",
+  "homepage": "https://github.com/i11ustriouS/dsh-mnemosyne#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/<owner>/dsh-mnemosyne.git"
+    "url": "git+https://github.com/i11ustriouS/dsh-mnemosyne.git"
   },
   "bugs": {
-    "url": "https://github.com/<owner>/dsh-mnemosyne/issues"
+    "url": "https://github.com/i11ustriouS/dsh-mnemosyne/issues"
   },
   "exports": {
     ".": "./index.js",
