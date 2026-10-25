@@ -1,9 +1,26 @@
 {
   "name": "dsh-mnemosyne",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
-  "description": "AI 对话长期记忆：自动沉淀每轮对话，按时间/对象/内容/事件类型建索引，以「人设框架 + 记忆索引」分层注入上下文。",
+  "description": "分层长期记忆：每轮只注入「人设框架 + 相关记忆索引」，原文留磁盘按需展开；人设由模型从记忆里自行归纳，记忆会自动合并与固化，存储也会压缩。",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "long-term-memory",
+    "context",
+    "persona"
+  ],
+  "homepage": "https://github.com/<owner>/dsh-mnemosyne#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/<owner>/dsh-mnemosyne.git"
+  },
+  "bugs": {
+    "url": "https://github.com/<owner>/dsh-mnemosyne/issues"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -25,14 +42,6 @@
     "cordis.patch.yml",
     "icon.svg",
     "README.md"
-  ],
-  "keywords": [
-    "dsh",
-    "dsh-plugin",
-    "deepseek-harness",
-    "memory",
-    "long-term-memory",
-    "context"
   ],
   "license": "MIT"
 }
