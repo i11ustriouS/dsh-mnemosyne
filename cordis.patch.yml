@@ -1,0 +1,33 @@
+- insert:
+    - id: memory-vault
+      name: dsh-memory-vault
+      config:
+        # 记忆库数据目录；留空使用 $DSH_HOME/memory-vault
+        dataDir: ''
+        # 是否把「人设框架 + 相关记忆索引」注入每次对话的上下文
+        inject: true
+        # 单次注入的字符上限（框架 + 索引卡片的总预算）
+        maxInjectChars: 2600
+        # 每轮对话结束是否自动用模型总结（失败自动降级为规则摘要）
+        autoSummarize: true
+        # 总结用模型；留空使用当前默认模型
+        summarizeProvider: ''
+        summarizeModel: ''
+        # 单次总结超时（毫秒）
+        summarizeTimeoutMs: 25000
+        # 索引中最多保留的条目数（超出按时间淘汰）
+        maxEntries: 20000
+        # 检索时最多带回的索引卡片数
+        maxRecall: 8
+        # 是否自动记录子代理会话
+        recordSubagents: false
+        # 人设框架是否随对话自行生成（记忆攒够一部分就自动让模型重新归纳）
+        autoPersona: true
+        # 每新增多少条记忆触发一次框架重建
+        personaEvery: 10
+        # 是否定时固化（合并重复 / 大话题压成摘要 / 归档低价值旧条目）
+        autoConsolidate: true
+        # 多少天以前的低价值条目可以被归档
+        consolidateMinAgeDays: 30
+        # 话题结束后过多少天可以压成一条摘要
+        consolidateDigestAgeDays: 3

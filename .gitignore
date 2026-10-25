@@ -1,0 +1,36 @@
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# 编辑器与系统
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 运行时产物与日志
+*.log
+logs/
+out/
+
+# 记忆库数据（绝不入库：含真实对话内容）
+entries/
+facts.jsonl
+profile.json
+state.json
+*.jsonl.bak
+*.jsonl.compact
+*.candidate
+
+# 临时与备份
+*.bak
+*.tmp
+*.orig
+*~
+tmp/
+temp/

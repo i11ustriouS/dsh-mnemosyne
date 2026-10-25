@@ -1,0 +1,38 @@
+{
+  "name": "dsh-memory-vault",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI 对话记忆库：自动沉淀每轮对话，按时间/对象/内容/事件类型建索引，以「人设框架 + 记忆索引」分层注入上下文。",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "icon": "./icon.svg",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "long-term-memory",
+    "context"
+  ],
+  "license": "MIT"
+}
