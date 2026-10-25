@@ -1,5 +1,5 @@
 /**
- * memory-vault — AI 对话记忆库（Host 半）。
+ * mnemosyne — AI 对话记忆女神（Host 半）。
  *
  * 三件事：
  *  1. 沉淀：每轮对话（turn/end 且成功）结束后，把「用户说的话 + AI 的回应」归档成一条记忆，
@@ -8,7 +8,7 @@
  *     召回时只注入「框架 + 索引卡片」，并做思考延伸（同会话上下文 / 共享对象 / 同期同类）。
  *  3. 分层注入：人设框架常驻，记忆索引按当前提问动态检索，整体受字符预算约束。
  *
- * 数据默认落在 $DSH_HOME/memory-vault，可通过 config.dataDir 改。
+ * 数据默认落在 $DSH_HOME/mnemosyne，可通过 config.dataDir 改。
  */
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -23,10 +23,10 @@ import { isActive, renderFactLine, resolveFacts, sameFactValue } from "./lib/fac
 import { PERSONA_PROMPT, buildPersonaInput, buildPersonaWithLlm, sameEvent } from "./lib/persona.js";
 import { planConsolidation } from "./lib/consolidate.js";
 
-export const name = "memory-vault";
+export const name = "mnemosyne";
 export const inject = ["systemPrompt", "tools", "webServer"];
 
-const API_PREFIX = "/memory-vault/api";
+const API_PREFIX = "/mnemosyne/api";
 const TITLE_MAX = 60;
 
 /** 读取配置（兼容 schemastery 的 getter 对象）。 */
@@ -196,7 +196,7 @@ function sessionTitleOf(session, titleService) {
 export function apply(ctx, rawConfig) {
   const cfg = readConfig(rawConfig);
   const logger = ctx.logger ?? { info() {}, warn() {}, debug() {} };
-  const root = cfg.dataDir !== "" ? cfg.dataDir : join(resolveDshHome(), "memory-vault");
+  const root = cfg.dataDir !== "" ? cfg.dataDir : join(resolveDshHome(), "mnemosyne");
   const store = createStore(root, { maxEntries: cfg.maxEntries, logger });
   const recall = createRecall({ maxRecall: cfg.maxRecall });
 
@@ -221,7 +221,7 @@ export function apply(ctx, rawConfig) {
       try {
         topicsIndex = buildTopics(store.listEntries());
       } catch (error) {
-        logger.warn(`memory-vault: 话题聚类失败：${String(error)}`);
+        logger.warn(`mnemosyne: 话题聚类失败：${String(error)}`);
         topicsIndex = { topics: [], byEntryId: new Map(), list: new Map() };
       }
     }
@@ -237,13 +237,13 @@ export function apply(ctx, rawConfig) {
       const entries = store.load();
       recall.rebuild(entries);
       ready = true;
-      logger.info?.(`memory-vault: 就绪，${entries.length} 条记忆 @ ${root}`);
+      logger.info?.(`mnemosyne: 就绪，${entries.length} 条记忆 @ ${root}`);
       // 启动后如果记忆已经涨够一个周期，自动归纳一次框架（不用用户点按钮）
       setTimeout(() => {
         try {
           maybeRebuildPersona();
         } catch {
-          /* 归纳失败不影响记忆库本身 */
+          /* 归纳失败不影响记忆本身 */
         }
       }, 3000);
       // 启动后检查一次是否需要压缩（追加式日志会累积历史版本）
@@ -255,12 +255,12 @@ export function apply(ctx, rawConfig) {
         }
       }, 25000);
     } catch (error) {
-      logger.warn(`memory-vault: 初始化失败：${String(error)}`);
+      logger.warn(`mnemosyne: 初始化失败：${String(error)}`);
     }
   };
   // 不阻塞启动：下一轮事件循环再读盘
   const initTimer = setTimeout(init, 0);
-  ctx.effect(() => () => clearTimeout(initTimer), "memory-vault:init-timer");
+  ctx.effect(() => () => clearTimeout(initTimer), "mnemosyne:init-timer");
 
   /** 把本轮召回计数回写磁盘（记忆强度），低频批量，避免写放大。 */
   const flushHits = () => {
@@ -268,14 +268,14 @@ export function apply(ctx, rawConfig) {
       const touched = recall.drainHits();
       for (const entry of touched) store.put(entry);
     } catch (error) {
-      logger.warn(`memory-vault: 回写召回计数失败：${String(error)}`);
+      logger.warn(`mnemosyne: 回写召回计数失败：${String(error)}`);
     }
   };
   const hitsTimer = setInterval(flushHits, 60000);
   ctx.effect(() => () => {
     clearInterval(hitsTimer);
     flushHits();
-  }, "memory-vault:hits-flush");
+  }, "mnemosyne:hits-flush");
 
   // ── 记忆写入 ──────────────────────────────────────────────────────────────
   const putEntry = (entry) => {
@@ -301,7 +301,7 @@ export function apply(ctx, rawConfig) {
     const { puts, retires, touches } = resolveFacts(activeFacts(), incoming, now);
     for (const item of retires) {
       store.retireFact(item.fact.id, { supersededBy: item.supersededBy, validUntil: now });
-      logger.info?.(`memory-vault: 事实失效 ${item.fact.slot}（${item.reason}）`);
+      logger.info?.(`mnemosyne: 事实失效 ${item.fact.slot}（${item.reason}）`);
     }
     for (const item of touches) store.touchFact(item.id);
     for (const fact of puts) {
@@ -313,7 +313,7 @@ export function apply(ctx, rawConfig) {
           : context.entryId !== undefined ? [context.entryId] : [],
         t: now,
       });
-      logger.info?.(`memory-vault: 事实写入 ${fact.slot} = ${fact.value}${fact.polarity === "-" ? "（否定）" : ""}`);
+      logger.info?.(`mnemosyne: 事实写入 ${fact.slot} = ${fact.value}${fact.polarity === "-" ? "（否定）" : ""}`);
     }
     injectionCache.clear();
     return { puts: puts.length, retires: retires.length, touches: touches.length };
@@ -354,7 +354,7 @@ export function apply(ctx, rawConfig) {
     if (changed) {
       profile = store.writeProfile(next);
       injectionCache.clear();
-      logger.info?.("memory-vault: 人设框架已更新");
+      logger.info?.("mnemosyne: 人设框架已更新");
     }
   };
 
@@ -406,9 +406,9 @@ export function apply(ctx, rawConfig) {
       if (Array.isArray(result.facts) && result.facts.length > 0) {
         assertFacts(result.facts, { entryId: entry.id, source: "llm" });
       }
-      logger.debug?.(`memory-vault: 已总结 ${entry.id}`);
+      logger.debug?.(`mnemosyne: 已总结 ${entry.id}`);
     } catch (error) {
-      logger.warn(`memory-vault: 总结失败 ${entry.id}：${String(error)}`);
+      logger.warn(`mnemosyne: 总结失败 ${entry.id}：${String(error)}`);
     } finally {
       pendingSummaries = Math.max(0, pendingSummaries - 1);
     }
@@ -501,12 +501,12 @@ export function apply(ctx, rawConfig) {
       }
       personaState = { running: false, lastAt: Date.now(), error: null, summary: draft.summary, facts: result.puts };
       injectionCache.clear();
-      logger.info?.(`memory-vault: 人设框架已重建（事实 +${result.puts} / -${result.retires}）`);
+      logger.info?.(`mnemosyne: 人设框架已重建（事实 +${result.puts} / -${result.retires}）`);
       return { ok: true, ...result, draft, profile: normalizeProfile(profile) };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       personaState = { ...personaState, running: false, error: message };
-      logger.warn(`memory-vault: 人设重建失败：${message}`);
+      logger.warn(`mnemosyne: 人设重建失败：${message}`);
       return { ok: false, error: message };
     } finally {
       personaState = { ...personaState, running: false };
@@ -526,7 +526,7 @@ export function apply(ctx, rawConfig) {
       store.writeState({ ...state, personaCount: count, personaAt: Date.now() });
       void rebuildPersona();
     } catch (error) {
-      logger.warn(`memory-vault: 自动重建框架失败：${String(error)}`);
+      logger.warn(`mnemosyne: 自动重建框架失败：${String(error)}`);
     }
   };
 
@@ -543,13 +543,13 @@ export function apply(ctx, rawConfig) {
       const facts = store.compactFacts();
       compactState = { lastAt: Date.now(), error: null, result: { ...result, facts } };
       logger.info?.(
-        `memory-vault: 压缩完成（条目 ${result.before} → ${result.after} 行，事实 ${facts.before} → ${facts.after} 行）`,
+        `mnemosyne: 压缩完成（条目 ${result.before} → ${result.after} 行，事实 ${facts.before} → ${facts.after} 行）`,
       );
       return { ok: true, ...result, facts };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       compactState = { ...compactState, error: message };
-      logger.warn(`memory-vault: 压缩失败：${message}`);
+      logger.warn(`mnemosyne: 压缩失败：${message}`);
       return { ok: false, error: message };
     }
   };
@@ -639,12 +639,12 @@ export function apply(ctx, rawConfig) {
       topicsIndex = null;
       injectionCache.clear();
       consolidateState = { running: false, lastAt: now, error: null, stats };
-      logger.info?.(`memory-vault: 固化完成（合并 ${stats.merged} / 摘要 ${stats.digests} / 归档 ${stats.archived}）`);
+      logger.info?.(`mnemosyne: 固化完成（合并 ${stats.merged} / 摘要 ${stats.digests} / 归档 ${stats.archived}）`);
       return { ok: true, ...stats };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       consolidateState = { ...consolidateState, running: false, error: message };
-      logger.warn(`memory-vault: 固化失败：${message}`);
+      logger.warn(`mnemosyne: 固化失败：${message}`);
       return { ok: false, error: message };
     }
   };
@@ -660,7 +660,7 @@ export function apply(ctx, rawConfig) {
     ctx.effect(() => () => {
       clearTimeout(firstTimer);
       clearInterval(interval);
-    }, "memory-vault:consolidate-timer");
+    }, "mnemosyne:consolidate-timer");
   };
 
   const captureTurn = (session, turn) => {
@@ -698,7 +698,7 @@ export function apply(ctx, rawConfig) {
     }
     // 记忆攒够一定量就顺手把框架重建一次（随对话自行生成）
     maybeRebuildPersona();
-    logger.info?.(`memory-vault: 归档一轮 ${entry.id}（${kindLabel(entry.kind)}，${entry.user.length} 字）`);
+    logger.info?.(`mnemosyne: 归档一轮 ${entry.id}（${kindLabel(entry.kind)}，${entry.user.length} 字）`);
     if (cfg.autoSummarize) {
       summarizeQueue.push(entry);
       void drainSummaries();
@@ -718,11 +718,11 @@ export function apply(ctx, rawConfig) {
         try {
           captureTurn(session, turn);
         } catch (error) {
-          logger.warn(`memory-vault: 归档异常：${String(error)}`);
+          logger.warn(`mnemosyne: 归档异常：${String(error)}`);
         }
       }, 0);
     } catch (error) {
-      logger.warn(`memory-vault: session/event 处理异常：${String(error)}`);
+      logger.warn(`mnemosyne: session/event 处理异常：${String(error)}`);
     }
   });
 
@@ -774,7 +774,7 @@ export function apply(ctx, rawConfig) {
         });
       }
     } catch (error) {
-      logger.warn(`memory-vault: 注入渲染失败：${String(error)}`);
+      logger.warn(`mnemosyne: 注入渲染失败：${String(error)}`);
       return "";
     }
     if (injectionCache.size > 64) injectionCache.clear();
@@ -783,10 +783,10 @@ export function apply(ctx, rawConfig) {
   };
 
   ctx.effect(() => ctx.systemPrompt.context({
-    name: "memory-vault:recall",
+    name: "mnemosyne:recall",
     order: 105,
     text: renderFor,
-  }), "memory-vault:prompt-context");
+  }), "mnemosyne:prompt-context");
 
   // ── 工具 ──────────────────────────────────────────────────────────────────
   const hitToJson = (hit) => ({
@@ -803,7 +803,7 @@ export function apply(ctx, rawConfig) {
   ctx.effect(() => ctx.tools.register({
     name: "memory_search",
     description:
-      "在长期记忆库里检索过去的对话。返回按相关度排序的记忆索引（时间、类型、摘要、关键词、id），不含全文；需要细节再用 memory_recall(id) 取原文。可用于回答「上次说的那个」「之前那个项目」之类的问题。",
+      "在长期记忆里检索过去的对话。返回按相关度排序的记忆索引（时间、类型、摘要、关键词、id），不含全文；需要细节再用 memory_recall(id) 取原文。可用于回答「上次说的那个」「之前那个项目」之类的问题。",
     parameters: {
       type: "object",
       properties: {
@@ -826,7 +826,7 @@ export function apply(ctx, rawConfig) {
       },
       render: (args, value) => {
         if (!value || !Array.isArray(value.hits) || value.hits.length === 0) {
-          return [{ type: "text", text: "记忆库里没有找到相关内容。" }];
+          return [{ type: "text", text: "记忆里没有找到相关内容。" }];
         }
         // 按话题归并：同一件事的多轮只占一行
         const asHits = value.hits.map((hit) => ({
@@ -846,7 +846,7 @@ export function apply(ctx, rawConfig) {
           reasons: hit.reasons ?? [],
         }));
         const lines = renderHitLines(asHits, ensureTopics());
-        return [{ type: "text", text: `记忆库命中 ${value.hits.length} 条：\n${lines.join("\n")}` }];
+        return [{ type: "text", text: `记忆命中 ${value.hits.length} 条：\n${lines.join("\n")}` }];
       },
     },
     async execute(args) {
@@ -860,7 +860,7 @@ export function apply(ctx, rawConfig) {
         hits: result.all.map(hitToJson),
       };
     },
-  }), "memory-vault:tool-search");
+  }), "mnemosyne:tool-search");
 
   ctx.effect(() => ctx.tools.register({
     name: "memory_recall",
@@ -935,12 +935,12 @@ export function apply(ctx, rawConfig) {
       }
       return { entries, missing };
     },
-  }), "memory-vault:tool-recall");
+  }), "mnemosyne:tool-recall");
 
   ctx.effect(() => ctx.tools.register({
     name: "memory_note",
     description:
-      "把一件值得长期记住的事写进记忆库（不依赖自动归档）。适合：用户明确要求记住、关键结论、重要决定、用户偏好。写入后立即可被后续对话召回。",
+      "把一件值得长期记住的事写进记忆（不依赖自动归档）。适合：用户明确要求记住、关键结论、重要决定、用户偏好。写入后立即可被后续对话召回。",
     parameters: {
       type: "object",
       properties: {
@@ -968,7 +968,7 @@ export function apply(ctx, rawConfig) {
         required: ["id", "time", "kind", "summary"],
         additionalProperties: false,
       },
-      render: (args, value) => [{ type: "text", text: `已记入记忆库（${kindLabel(value.kind)}，id=${value.id}）：${value.summary}` }],
+      render: (args, value) => [{ type: "text", text: `已记入记忆（${kindLabel(value.kind)}，id=${value.id}）：${value.summary}` }],
     },
     async execute(args) {
       init();
@@ -1000,7 +1000,7 @@ export function apply(ctx, rawConfig) {
       putEntry(entry);
       return { id: entry.id, time: entry.t, kind: entry.kind, summary: entry.summary };
     },
-  }), "memory-vault:tool-note");
+  }), "mnemosyne:tool-note");
 
   ctx.effect(() => ctx.tools.register({
     name: "memory_profile",
@@ -1074,7 +1074,7 @@ export function apply(ctx, rawConfig) {
       }
       return { profile: normalizeProfile(profile) };
     },
-  }), "memory-vault:tool-profile");
+  }), "mnemosyne:tool-profile");
 
   ctx.effect(() => ctx.tools.register({
     name: "memory_facts",
@@ -1133,7 +1133,7 @@ export function apply(ctx, rawConfig) {
       }
       return { facts: activeFacts().slice(0, 60) };
     },
-  }), "memory-vault:tool-facts");
+  }), "mnemosyne:tool-facts");
 
   // ── 面板 API ──────────────────────────────────────────────────────────────
   const json = (res, code, value) => {
@@ -1326,7 +1326,7 @@ export function apply(ctx, rawConfig) {
                 turns: result.turns,
                 finishedAt: Date.now(),
               };
-              logger.info?.(`memory-vault: 历史回填完成，写入 ${result.written} 条（跳过 ${result.skipped}）`);
+              logger.info?.(`mnemosyne: 历史回填完成，写入 ${result.written} 条（跳过 ${result.skipped}）`);
             } catch (error) {
               backfillState = {
                 ...backfillState,
@@ -1334,7 +1334,7 @@ export function apply(ctx, rawConfig) {
                 error: error instanceof Error ? error.message : String(error),
                 finishedAt: Date.now(),
               };
-              logger.warn(`memory-vault: 历史回填失败：${String(error)}`);
+              logger.warn(`mnemosyne: 历史回填失败：${String(error)}`);
             }
           })();
           return json(res, 200, { ok: true, started: true, maxSessions, maxTurns });
@@ -1524,14 +1524,14 @@ export function apply(ctx, rawConfig) {
 
         return json(res, 404, { ok: false, error: `未知接口：${req.method} ${sub}` });
       } catch (error) {
-        logger.warn(`memory-vault: API 异常 ${req.method} ${req.url}：${String(error)}`);
+        logger.warn(`mnemosyne: API 异常 ${req.method} ${req.url}：${String(error)}`);
         return json(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) });
       }
     },
-  }), "memory-vault:http-api");
+  }), "mnemosyne:http-api");
 
   // 定时固化（合并重复 / 生成摘要 / 归档低价值旧条目）
   scheduleConsolidation();
 
-  logger.info?.(`memory-vault: 已挂载（数据目录 ${root}）`);
+  logger.info?.(`mnemosyne: 已挂载（数据目录 ${root}）`);
 }

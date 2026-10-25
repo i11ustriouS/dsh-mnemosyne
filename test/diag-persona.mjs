@@ -2,7 +2,7 @@
  * 直接调用运行中的 Host 插件 API 触发人设归纳，并观察返回。
  * 用法：node test/diag-persona.mjs
  */
-const api = "http://127.0.0.1:62451/memory-vault/api";
+const api = "http://127.0.0.1:62451/mnemosyne/api";
 
 const res = await fetch(`${api}/persona/rebuild`, {
   method: "POST",

@@ -68,8 +68,8 @@ check("英文词归一化", () => {
 });
 
 check("实体：引号与文件名", () => {
-  const entities = extractEntities('把「记忆库」写到 D:\\记忆库\\memory-vault\\index.js');
-  assert.ok(entities.includes("记忆库"), `缺引号实体：${entities.join(",")}`);
+  const entities = extractEntities('把「记忆女神」写到 D:\\记忆女神\\mnemosyne\\index.js');
+  assert.ok(entities.includes("记忆女神"), `缺引号实体：${entities.join(",")}`);
   assert.ok(entities.some((e) => e.endsWith("index.js")), `缺文件名：${entities.join(",")}`);
 });
 
@@ -92,12 +92,12 @@ check("事件类型：默认闲聊", () => {
 });
 
 check("关键词排序稳定", () => {
-  const keywords = topKeywords("记忆库 记忆库 记忆库 插件", 3);
-  assert.ok(keywords.includes("记忆库"));
+  const keywords = topKeywords("记忆女神 记忆女神 记忆女神 插件", 3);
+  assert.ok(keywords.includes("记忆女神"));
 });
 
 check("规则摘要包含双方", () => {
-  const summary = ruleSummary("帮我写个记忆库插件。", "已经写好了第一版。");
+  const summary = ruleSummary("帮我写个记忆女神插件。", "已经写好了第一版。");
   assert.ok(summary.includes("用户"));
   assert.ok(summary.includes("回应"));
 });
@@ -200,12 +200,12 @@ const fixture = [
     t: now - 2 * DAY,
     kind: "event",
     sessionId: "s1",
-    sessionTitle: "记忆库插件",
-    user: "帮我做一个 AI 对话记忆库插件，要能自动总结",
+    sessionTitle: "记忆女神插件",
+    user: "帮我做一个 AI 对话记忆女神插件，要能自动总结",
     assistant: "好的，先做存储和索引。",
-    summary: "用户要求开发对话记忆库插件，需自动总结每轮对话",
-    keywords: ["记忆库", "插件", "自动总结"],
-    entities: ["记忆库插件"],
+    summary: "用户要求开发对话记忆女神插件，需自动总结每轮对话",
+    keywords: ["记忆女神", "插件", "自动总结"],
+    entities: ["记忆女神插件"],
   },
   {
     id: "mv-b",
@@ -253,8 +253,8 @@ check("索引构建", () => {
 check("中文检索命中", () => {
   const recall = createRecall();
   recall.rebuild(fixture);
-  const result = recall.recall("记忆库怎么存");
-  assert.ok(result.primary.length > 0, "应命中记忆库相关条目");
+  const result = recall.recall("记忆女神怎么存");
+  assert.ok(result.primary.length > 0, "应命中记忆女神相关条目");
   assert.equal(result.primary[0].entry.id, "mv-a", `首条应为 mv-a，实际 ${result.primary[0].entry.id}`);
 });
 
@@ -282,7 +282,7 @@ check("时间提示解析", () => {
 check("思考延伸带出同会话上下文", () => {
   const recall = createRecall();
   recall.rebuild(fixture);
-  const result = recall.recall("记忆库怎么存", { limit: 1 });
+  const result = recall.recall("记忆女神怎么存", { limit: 1 });
   assert.ok(result.extra.some((hit) => hit.entry.id === "mv-b"), `延伸应包含同会话的 mv-b，实际 ${result.extra.map((h) => h.entry.id).join(",")}`);
 });
 
@@ -298,7 +298,7 @@ check("删除后不再命中", () => {
   const recall = createRecall();
   recall.rebuild(fixture);
   recall.drop("mv-a");
-  const result = recall.recall("记忆库");
+  const result = recall.recall("记忆女神");
   assert.ok(!result.all.some((hit) => hit.entry.id === "mv-a"));
 });
 
@@ -309,7 +309,7 @@ check("空索引不崩溃", () => {
 });
 
 check("卡片渲染含 id 与类型", () => {
-  const card = renderCard({ entry: normalizeEntry(fixture[0]), score: 1, reasons: ["关键词：记忆库"] }, 0);
+  const card = renderCard({ entry: normalizeEntry(fixture[0]), score: 1, reasons: ["关键词：记忆女神"] }, 0);
   assert.ok(card.includes("mv-a"));
   assert.ok(card.includes("事件"));
 });
@@ -392,7 +392,7 @@ await checkAsync("模型总结：超时降级 null", async () => {
 check("注入渲染含框架与卡片", () => {
   const recall = createRecall();
   recall.rebuild(fixture);
-  const result = recall.recall("记忆库");
+  const result = recall.recall("记忆女神");
   const text = renderInjection({
     profile: normalizeProfile({
       user: { name: "老王", nicknames: ["王哥"], calledBy: "老王", tone: "直接" },
@@ -413,7 +413,7 @@ check("注入渲染含框架与卡片", () => {
 check("注入预算生效", () => {
   const recall = createRecall();
   recall.rebuild(fixture);
-  const result = recall.recall("记忆库");
+  const result = recall.recall("记忆女神");
   const text = renderInjection({
     profile: normalizeProfile({ notes: "x".repeat(5000) }),
     recall: result,
@@ -437,7 +437,7 @@ check("口语短段不进索引", () => {
 });
 
 check("滑窗碎片不当关键词", () => {
-  const keywords = topKeywords("用户要求写一个 AI 对话记忆库插件，记忆库要能自动总结每轮对话", 6);
+  const keywords = topKeywords("用户要求写一个 AI 对话记忆女神插件，记忆女神要能自动总结每轮对话", 6);
   const junk = keywords.filter((k) => k === "忆库插" || k === "库插件" || k === "话记忆" || k === "忆库要");
   assert.equal(junk.length, 0, `出现碎片：${keywords.join(",")}`);
   assert.ok(keywords.some((k) => k.includes("记忆")), `应保留记忆相关词：${keywords.join(",")}`);
@@ -461,7 +461,7 @@ check("规则人设抽取：无信息返回 null", () => {
 });
 
 check("卡片单行且不含内部匹配细节", () => {
-  const card = renderCard({ entry: normalizeEntry({ ...fixture[0], hits: 3, tags: [] }), score: 1, reasons: ["关键词：记忆库、插件"] }, 0);
+  const card = renderCard({ entry: normalizeEntry({ ...fixture[0], hits: 3, tags: [] }), score: 1, reasons: ["关键词：记忆女神、插件"] }, 0);
   assert.ok(!card.includes("关联："), `不应暴露内部原因：${card}`);
   assert.equal(card.split("\n").length, 1, "卡片应为单行");
   assert.ok(card.includes("mv-a"));
@@ -470,7 +470,7 @@ check("卡片单行且不含内部匹配细节", () => {
 check("召回计数累加并可回写", () => {
   const r = createRecall();
   r.rebuild(fixture);
-  r.recall("记忆库");
+  r.recall("记忆女神");
   const touched = r.drainHits();
   assert.ok(touched.length > 0, "应有被召回的条目");
   assert.ok(touched.every((entry) => entry.hits >= 1));
@@ -480,16 +480,16 @@ check("召回计数累加并可回写", () => {
 check("test 标签不参与自动召回", () => {
   const r = createRecall();
   r.rebuild([...fixture, { ...fixture[0], id: "mv-test", tags: ["test"] }]);
-  const auto = r.recall("记忆库插件");
+  const auto = r.recall("记忆女神插件");
   assert.ok(!auto.all.some((hit) => hit.entry.id === "mv-test"), "test 条目不应被自动召回");
-  const manual = r.recall("记忆库插件", { skipTags: [] });
+  const manual = r.recall("记忆女神插件", { skipTags: [] });
   assert.ok(manual.all.some((hit) => hit.entry.id === "mv-test"), "手动搜索应能看到");
 });
 
 check("注入更紧凑（无冗余段落）", () => {
   const r = createRecall();
   r.rebuild(fixture);
-  const result = r.recall("记忆库");
+  const result = r.recall("记忆女神");
   const text = renderInjection({ profile: normalizeProfile({ user: { name: "老王" } }), recall: result, maxChars: 2600 });
   assert.ok(!text.includes("以下为延伸召回"), "不应再有延伸说明段");
   assert.ok(!text.includes("关联："), "不应暴露内部匹配细节");
@@ -754,7 +754,7 @@ await checkAsync("事实库落盘与回放", async () => {
 check("注入里的事实优先于旧 profile", () => {
   const r = createRecall();
   r.rebuild(fixture);
-  const result = r.recall("记忆库");
+  const result = r.recall("记忆女神");
   const facts = [normalizeFact({ subject: "user", predicate: "nickname", value: "王哥" }, now)];
   const text = renderInjection({
     profile: normalizeProfile({ user: { name: "老王", nicknames: ["旧昵称"] } }),
@@ -1211,25 +1211,25 @@ console.log("\n[persona-guard] 防污染");
 
 check("路径事实：真路径通过，描述性文字拒绝", () => {
   assert.equal(isPathLike("D:\\设备测试\\adb_lab"), true);
-  assert.equal(isPathLike("D:/记忆库"), true);
-  assert.equal(isPathLike("记忆库面板挂载槽 shell.overlay"), false, "描述性文字不是路径");
+  assert.equal(isPathLike("D:/记忆女神"), true);
+  assert.equal(isPathLike("记忆女神面板挂载槽 shell.overlay"), false, "描述性文字不是路径");
   assert.equal(isPathLike("test/compact.mjs"), false, "裸相对文件不是目录");
   assert.equal(isPathLike(""), false);
   assert.equal(isPathLike("C:\\Program Files\\x"), false, "含空格的盘符路径不可信");
 });
 
 check("框架回流内容被识别并拒绝", () => {
-  assert.equal(isFrameworkEcho("## 记忆库\n### 框架"), true);
+  assert.equal(isFrameworkEcho("## 记忆女神\n### 框架"), true);
   assert.equal(isFrameworkEcho("- 目录：D:\\x；D:\\y"), true, "整句注入行样式");
   assert.equal(isFrameworkEcho("- 性格:直接/务实 ｜ 偏好:先给结论"), true, "半角冒号也要识别");
-  assert.equal(isFrameworkEcho("用户要求实现记忆库插件"), false);
+  assert.equal(isFrameworkEcho("用户要求实现记忆女神插件"), false);
 });
 
 check("草稿：污染 facts 在归一化时被剔除", () => {
   const draft = normalizePersonaDraft({
     facts: [
       { subject: "user", predicate: "preference", value: "先给结论" },
-      { subject: "env", predicate: "path", value: "记忆库面板挂载槽 shell.overlay" },
+      { subject: "env", predicate: "path", value: "记忆女神面板挂载槽 shell.overlay" },
       { subject: "env", predicate: "path", value: "D:\\设备测试\\adb_lab" },
     ],
     events: [],
@@ -1238,7 +1238,7 @@ check("草稿：污染 facts 在归一化时被剔除", () => {
     summary: "",
   });
   assert.equal(draft.facts.length, 2, `应剔掉描述性路径：${JSON.stringify(draft.facts.map((f) => f.value))}`);
-  assert.ok(draft.facts.every((fact) => fact.value !== "记忆库面板挂载槽 shell.overlay"));
+  assert.ok(draft.facts.every((fact) => fact.value !== "记忆女神面板挂载槽 shell.overlay"));
 });
 
 check("事实入库：path 谓词必须是真路径", () => {
@@ -1259,9 +1259,9 @@ check("事件过滤：开发流水不算里程碑", () => {
     personality: [],
     preferences: [],
     events: [
-      { t: "2026-10-25", text: "记忆库改造：事实层与情景层分库，自检 75/75 通过" },
-      { t: "2026-10-25", text: "修复记忆库面板空白（挂载槽改为 shell.overlay）" },
-      { t: "2026-10-25", text: "记忆库压缩 1034→80 行（-92%）" },
+      { t: "2026-10-25", text: "记忆女神改造：事实层与情景层分库，自检 75/75 通过" },
+      { t: "2026-10-25", text: "修复记忆女神面板空白（挂载槽改为 shell.overlay）" },
+      { t: "2026-10-25", text: "记忆女神压缩 1034→80 行（-92%）" },
       { t: "2026-10-22", text: "明确 adb_lab 工具必须全程离线不联网" },
       { t: "2026-10-18", text: "渗透演练改为只对自建本地靶场进行" },
     ],
@@ -1291,7 +1291,7 @@ check("归纳输入：框架回流条目被排除", () => {
   const input = buildPersonaInput({
     entries: [
       { t: now, kind: "event", summary: "正常的一轮对话内容", user: "x", keywords: [], entities: [] },
-      { t: now, kind: "event", summary: "## 记忆库\n### 框架\n- 目录：D:\\a", user: "", keywords: [], entities: [] },
+      { t: now, kind: "event", summary: "## 记忆女神\n### 框架\n- 目录：D:\\a", user: "", keywords: [], entities: [] },
       { t: now, kind: "event", summary: "- 性格:直接/务实 ｜ 偏好:先给结论", user: "", keywords: [], entities: [] },
     ],
     facts: [],

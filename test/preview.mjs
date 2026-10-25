@@ -1,5 +1,5 @@
 /**
- * 离线预览：用真实记忆库数据 + 当前源码跑一次注入渲染，不依赖运行中的 DSH。
+ * 离线预览：用真实记忆女神数据 + 当前源码跑一次注入渲染，不依赖运行中的 DSH。
  * 用途：改完 lib/ 之后立刻看效果，不用重启。
  * 运行：node test/preview.mjs "你的问题"
  */
@@ -10,7 +10,7 @@ import { buildTopics } from "../lib/topics.js";
 import { resolveDataDir } from "./paths.mjs";
 
 const dataDir = resolveDataDir();
-const query = process.argv[2] ?? "记忆库插件怎么优化";
+const query = process.argv[2] ?? "记忆女神插件怎么优化";
 const maxChars = Number(process.argv[3] ?? 2600);
 
 const store = createStore(dataDir, { logger: { warn() {} } });

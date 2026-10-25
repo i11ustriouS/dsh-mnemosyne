@@ -7,7 +7,7 @@
  * 新代码（话题聚合 / 事实层 / 回填数据）有没有真的进到运行中的进程里。
  */
 const base = (process.argv[2] ?? "http://127.0.0.1:62451").replace(/\/$/u, "");
-const api = `${base}/memory-vault/api`;
+const api = `${base}/mnemosyne/api`;
 
 let pass = 0;
 let fail = 0;
@@ -52,7 +52,7 @@ console.log(`目标：${api}\n`);
 const summary = await get("/summary");
 if (summary.ok !== true) {
   console.log(`✗ 插件未响应（HTTP ${summary.status}）：${summary.error ?? ""}`);
-  console.log("\n如果这是重启后第一次运行，说明 Host 侧仍未加载 —— 检查 profile 的 dsh.profile.bundles 是否含 dsh-memory-vault。");
+  console.log("\n如果这是重启后第一次运行，说明 Host 侧仍未加载 —— 检查 profile 的 dsh.profile.bundles 是否含 dsh-mnemosyne。");
   process.exit(1);
 }
 ok("Host 插件在线", `HTTP ${summary.status}`);
@@ -110,6 +110,6 @@ console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail}
 if (fail > 0) {
   console.log("\n失败项说明：");
   console.log("- 若「旧代码」字样出现 → 运行中的进程还是重启前的模块，需要真正重启 DSH");
-  console.log("- 若「数量偏少」→ 数据没加载，检查 $DSH_HOME/memory-vault 下的 entries/ 与 facts.jsonl");
+  console.log("- 若「数量偏少」→ 数据没加载，检查 $DSH_HOME/mnemosyne 下的 entries/ 与 facts.jsonl");
 }
 process.exitCode = fail === 0 ? 0 : 1;

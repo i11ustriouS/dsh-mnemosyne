@@ -1,15 +1,15 @@
 /**
- * memory-vault — Web 面板（Client 半）。
+ * mnemosyne — Web 面板（Client 半）。
  *
- * 侧栏底部一个「记忆库」入口，点开是全屏面板：
+ * 侧栏底部一个「Mnemosyne」入口，点开是全屏面板：
  *  · 记忆：搜索 / 按事件类型筛选 / 展开原文 / 手动记一条 / 删除
  *  · 人设框架：称呼、昵称、AI 人设、性格、偏好、重要事件（可编辑保存）
  *  · 召回预览：输入一句话，看这次对话实际会注入哪些记忆（调试与信任都靠它）
  *
- * 全部数据通过 Host 的 /memory-vault/api/* 读写；样式只用 --dsw-alias-* 主题变量。
+ * 全部数据通过 Host 的 /mnemosyne/api/* 读写；样式只用 --dsw-alias-* 主题变量。
  */
 window.__ModuleLoader__.load({
-  id: "dsh-memory-vault",
+  id: "dsh-mnemosyne",
   factory(require) {
     const React = require("react");
     const {
@@ -22,13 +22,13 @@ window.__ModuleLoader__.load({
     } = React;
     const h = React.createElement;
 
-    const API = "/memory-vault/api";
-    const NS = "dsh-memory-vault";
+    const API = "/mnemosyne/api";
+    const NS = "dsh-mnemosyne";
 
     const zh = {
-      "footer.label": "记忆库",
-      "footer.aria": "打开记忆库",
-      "panel.title": "记忆库",
+      "footer.label": "记忆女神",
+      "footer.aria": "打开记忆女神",
+      "panel.title": "记忆女神",
       "panel.close": "关闭",
       "tab.entries": "记忆",
       "tab.profile": "人设框架",
@@ -39,7 +39,7 @@ window.__ModuleLoader__.load({
       "search.clear": "清空",
       "filter.all": "全部",
       "empty.search": "没有匹配的记忆",
-      "empty.list": "记忆库还是空的：聊几轮，或手动记一条",
+      "empty.list": "这里还是空的：聊几轮，或手动记一条",
       "empty.detail": "选择左侧一条记忆查看原文",
       "btn.expand": "展开原文",
       "btn.collapse": "收起",
@@ -47,8 +47,8 @@ window.__ModuleLoader__.load({
       "btn.confirmDelete": "确认删除",
       "note.title": "手动记一条",
       "note.placeholder": "要长期记住的事：结论、决定、偏好、约定…",
-      "note.save": "记入记忆库",
-      "note.saved": "已记入记忆库",
+      "note.save": "记入记忆",
+      "note.saved": "已记入记忆",
       "profile.userName": "用户名字",
       "profile.nicknames": "昵称（逗号分隔）",
       "profile.calledBy": "AI 对用户的称呼",
@@ -59,7 +59,7 @@ window.__ModuleLoader__.load({
       "profile.preferences": "用户偏好（逗号分隔）",
       "profile.notes": "补充备注",
       "profile.events": "重要事件节点",
-      "profile.eventPlaceholder": "例如：2026-10-18 完成记忆库插件第一版",
+      "profile.eventPlaceholder": "例如：2026-10-18 完成 Mnemosyne 插件第一版",
       "profile.addEvent": "添加事件",
       "profile.save": "保存框架",
       "profile.saved": "已保存",
@@ -70,7 +70,7 @@ window.__ModuleLoader__.load({
       "persona.auto": "框架会随对话自动生成，这里可以手动修正。",
       "preview.placeholder": "输入一句你可能会问的话，看会注入哪些记忆…",
       "preview.button": "生成预览",
-      "preview.hint": "这里显示的是「记忆库」在真实对话里注入给 AI 的完整文本。",
+      "preview.hint": "这里显示的是 Mnemosyne 在真实对话里注入给 AI 的完整文本。",
       "preview.chars": "字符数",
       "stat.count": "条记忆",
       "stat.dir": "数据目录",
@@ -106,9 +106,9 @@ window.__ModuleLoader__.load({
     };
 
     const en = {
-      "footer.label": "Memory",
-      "footer.aria": "Open memory vault",
-      "panel.title": "Memory vault",
+      "footer.label": "Mnemosyne",
+      "footer.aria": "Open Mnemosyne",
+      "panel.title": "Mnemosyne",
       "panel.close": "Close",
       "tab.entries": "Memories",
       "tab.profile": "Persona",
@@ -1110,7 +1110,7 @@ window.__ModuleLoader__.load({
 
     function apply(ctx) {
       let dictionary = zh;
-      ctx.effect(() => ctx.locale.register(NS, { zh, en }), "memory-vault:dictionaries");
+      ctx.effect(() => ctx.locale.register(NS, { zh, en }), "mnemosyne:dictionaries");
       // 用 locale 的当前语言挑字典；拿不到就退回中文
       try {
         const active = ctx.locale.get?.(NS) ?? null;
@@ -1122,7 +1122,7 @@ window.__ModuleLoader__.load({
 
       ctx.slots.inject("sidebar.footer.action", () => ctx.slots.register({
         name: "sidebar.footer.action",
-        id: "memory-vault-footer",
+        id: "mnemosyne-footer",
         order: 31,
         locale: NS,
       }, (props) => h(FooterAction, { ...props, t })));
@@ -1130,7 +1130,7 @@ window.__ModuleLoader__.load({
       // 全屏面板挂全窗口浮层：它在所有列之外，不受侧栏滚动容器裁剪
       ctx.slots.inject("shell.overlay", () => ctx.slots.register({
         name: "shell.overlay",
-        id: "memory-vault-overlay",
+        id: "mnemosyne-overlay",
         order: 50,
       }, () => h(OverlayRoot, { t })));
     }

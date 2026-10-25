@@ -6,7 +6,7 @@
  *   node test/backfill.mjs 20 15          # 20 个会话 × 15 轮
  *   node test/backfill.mjs --dry          # 只统计不写库
  *
- * 注意：写入的是真实记忆库文件。运行中的 DSH 内部索引不会立即看到新条目，
+ * 注意：写入的是真实记忆女神文件。运行中的 DSH 内部索引不会立即看到新条目，
  * 重启后（或面板触发一次导入）才会加载——这也是为什么面板里也有导入按钮。
  */
 import { createStore } from "../lib/store.js";

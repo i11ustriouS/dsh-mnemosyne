@@ -1,6 +1,9 @@
-# 记忆库 · dsh-memory-vault
+# Mnemosyne · 记忆女神
 
-给我（AI）和你自己用的**长期对话记忆库**。它把每一轮对话自动归档成可检索的记忆，
+> Mnemosyne（读作 ne-MOS-i-nee），希腊神话的记忆女神，九位缪斯之母。
+> 名字取的正是她的职能：**让发生过的事留下来，并在需要时被想起。**
+
+给我（AI）和你自己用的**长期对话记忆系统**。它把每一轮对话自动归档成可检索的记忆，
 再把「人设框架 + 相关记忆索引」在对话时分层注入，避免上下文被塞爆。
 
 不是又一个聊天记录搜索——重点在**分层**：框架常驻、索引按需、原文留库。
@@ -76,7 +79,7 @@
 **2. 框架回流拦截**
 
 注入到系统提示的框架文本，有时会被会话摘要捕获，变成一条新记忆 ——
-再喂回归纳就成了自我强化的正反馈（`记忆库面板挂载槽 shell.overlay` 就是这么进来的）。
+再喂回归纳就成了自我强化的正反馈（`记忆面板挂载槽 shell.overlay` 就是这么进来的）。
 `normalizeFact()` 与 `buildPersonaInput()` 都会识别并拒绝这类内容。
 
 **3. 同一件事只留一条**
@@ -195,7 +198,7 @@ CLI 可以离线跑：`node test/consolidate.mjs`（预览）/ `--apply`（执�
 
 ### 1. 侧栏面板（Web UI）
 
-侧栏底部「记忆库」按钮 → 全屏面板，四个页签：
+侧栏底部「记忆女神」按钮 → 全屏面板，四个页签：
 
 - **记忆** —— 搜索、按类型筛、展开原文、手动记一条、删除、导入历史、固化
 - **人设框架** —— 查看/修正 AI 对你的认知；顶部「让 AI 重新归纳」
@@ -215,33 +218,33 @@ CLI 可以离线跑：`node test/consolidate.mjs`（预览）/ `--apply`（执�
 ### 3. HTTP API（给面板和脚本用）
 
 ```
-GET  /memory-vault/api/summary              概览（条数/话题/事实/状态）
-GET  /memory-vault/api/entries              条目列表
-POST /memory-vault/api/search  { query }    检索
-POST /memory-vault/api/get     { id }       取原文
-POST /memory-vault/api/note    { text }     记一条
-POST /memory-vault/api/delete  { id }       删除
-POST /memory-vault/api/profile { profile }  写人设框架
-POST /memory-vault/api/preview  { query }   看注入文本
-GET  /memory-vault/api/topics               话题列表
-GET  /memory-vault/api/facts?all=1          事实（all=1 含已失效）
-POST /memory-vault/api/facts    { action: assert|retract, facts?, id? }
-POST /memory-vault/api/persona/rebuild      让 AI 从记忆重新归纳框架
-GET  /memory-vault/api/persona/status       归纳状态（上次时间/错误）
-POST /memory-vault/api/consolidate          固化（{ dryRun } 预览）
-GET  /memory-vault/api/consolidate/status   固化状态
-POST /memory-vault/api/compact              压缩存储（重写操作流）
-POST /memory-vault/api/backfill { maxSessions, maxTurns }
-GET  /memory-vault/api/backfill/status      导入进度
+GET  /mnemosyne/api/summary              概览（条数/话题/事实/状态）
+GET  /mnemosyne/api/entries              条目列表
+POST /mnemosyne/api/search  { query }    检索
+POST /mnemosyne/api/get     { id }       取原文
+POST /mnemosyne/api/note    { text }     记一条
+POST /mnemosyne/api/delete  { id }       删除
+POST /mnemosyne/api/profile { profile }  写人设框架
+POST /mnemosyne/api/preview  { query }   看注入文本
+GET  /mnemosyne/api/topics               话题列表
+GET  /mnemosyne/api/facts?all=1          事实（all=1 含已失效）
+POST /mnemosyne/api/facts    { action: assert|retract, facts?, id? }
+POST /mnemosyne/api/persona/rebuild      让 AI 从记忆重新归纳框架
+GET  /mnemosyne/api/persona/status       归纳状态（上次时间/错误）
+POST /mnemosyne/api/consolidate          固化（{ dryRun } 预览）
+GET  /mnemosyne/api/consolidate/status   固化状态
+POST /mnemosyne/api/compact              压缩存储（重写操作流）
+POST /mnemosyne/api/backfill { maxSessions, maxTurns }
+GET  /mnemosyne/api/backfill/status      导入进度
 ```
 
 ## 数据在哪
 
-默认 `$DSH_HOME/memory-vault`（DSH 状态根下的 `memory-vault` 目录）。
-测试脚本按 `MV_DATA_DIR` → `$DSH_HOME/memory-vault` → `~/.dsh/memory-vault` 的顺序解析。
+默认 `$DSH_HOME/mnemosyne`（DSH 状态根下的 `mnemosyne` 目录）。
+测试脚本按 `MV_DATA_DIR` → `$DSH_HOME/mnemosyne` → `~/.dsh/mnemosyne` 的顺序解析。
 
 ```
-memory-vault/
+mnemosyne/
   entries/2026-10.jsonl   情景记忆：按月分片，逐行追加（log-structured）
   facts.jsonl             语义记忆：事实的断言/失效/刷新操作流
   profile.json            手工维护的人设框架
@@ -253,9 +256,9 @@ memory-vault/
 `cordis.patch.yml` 里该插件的 config：
 
 ```yaml
-  name: dsh-memory-vault
+  name: dsh-mnemosyne
   config:
-    dataDir: ''                 # 留空用 $DSH_HOME/memory-vault
+    dataDir: ''                 # 留空用 $DSH_HOME/mnemosyne
     inject: true                # 关掉就只记录不注入
     maxInjectChars: 2600        # 注入预算（字符）
     autoSummarize: true         # 关掉就只用规则摘要，零模型调用

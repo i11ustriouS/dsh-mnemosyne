@@ -1,8 +1,8 @@
 - insert:
-    - id: memory-vault
-      name: dsh-memory-vault
+    - id: mnemosyne
+      name: dsh-mnemosyne
       config:
-        # 记忆库数据目录；留空使用 $DSH_HOME/memory-vault
+        # 记忆女神数据目录；留空使用 $DSH_HOME/mnemosyne
         dataDir: ''
         # 是否把「人设框架 + 相关记忆索引」注入每次对话的上下文
         inject: true

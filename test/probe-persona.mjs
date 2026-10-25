@@ -5,7 +5,7 @@
  * 看哪一级开始出现 finish=aborted。需要重启 DSH 后运行：
  *   node test/probe-persona.mjs
  */
-const api = "http://127.0.0.1:62451/memory-vault/api";
+const api = "http://127.0.0.1:62451/mnemosyne/api";
 
 const res = await fetch(`${api}/persona/probe`, {
   method: "POST",

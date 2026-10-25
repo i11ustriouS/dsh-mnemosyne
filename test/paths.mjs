@@ -1,29 +1,29 @@
 /**
  * 测试脚本的公共路径解析。
  *
- * 所有脚本都要读写「记忆库数据目录」，而它依赖 DSH 环境。
+ * 所有脚本都要读写「记忆女神数据目录」，而它依赖 DSH 环境。
  * 把解析集中在这里，避免每个脚本各写一份硬编码路径（也避免把个人机器路径带进仓库）。
  *
  * 解析顺序：
  *   1. MV_DATA_DIR —— 直接指定数据目录（最高优先，便于测试隔离）
- *   2. DSH_HOME/memory-vault —— DSH 标准位置
- *   3. 当前用户目录下的 .dsh/memory-vault —— 常见回退
+ *   2. DSH_HOME/mnemosyne —— DSH 标准位置
+ *   3. 当前用户目录下的 .dsh/mnemosyne —— 常见回退
  */
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-/** 记忆库数据目录。 */
+/** 记忆女神数据目录。 */
 export function resolveDataDir() {
   const explicit = process.env.MV_DATA_DIR;
   if (typeof explicit === "string" && explicit.trim() !== "") return explicit.trim();
 
   const dshHome = process.env.DSH_HOME;
   if (typeof dshHome === "string" && dshHome.trim() !== "") {
-    return join(dshHome.trim(), "memory-vault");
+    return join(dshHome.trim(), "mnemosyne");
   }
 
-  return join(homedir(), ".dsh", "memory-vault");
+  return join(homedir(), ".dsh", "mnemosyne");
 }
 
 /**
