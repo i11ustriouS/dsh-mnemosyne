@@ -38,6 +38,10 @@ window.__ModuleLoader__.load({
       "search.button": "搜索",
       "search.clear": "清空",
       "filter.all": "全部",
+      "origin.label": "来源：",
+      "origin.all": "全部",
+      "origin.local": "DSH 网页",
+      "origin.qq": "QQ",
       "empty.search": "没有匹配的记忆",
       "empty.list": "这里还是空的：聊几轮，或手动记一条",
       "empty.detail": "选择左侧一条记忆查看原文",
@@ -118,6 +122,10 @@ window.__ModuleLoader__.load({
       "search.button": "Search",
       "search.clear": "Clear",
       "filter.all": "All",
+      "origin.label": "Source:",
+      "origin.all": "All",
+      "origin.local": "DSH web",
+      "origin.qq": "QQ",
       "empty.search": "No matching memories",
       "empty.list": "The vault is empty. Chat a few turns, or add one manually.",
       "empty.detail": "Pick a memory on the left to read it",
@@ -463,6 +471,8 @@ window.__ModuleLoader__.load({
         h("div", { style: styles.row },
           h("span", { style: styles.badge(entry.kind) }, t(`kind.${entry.kind}`)),
           h("span", { style: styles.muted }, fmtTime(entry.time)),
+          // 来源标记：QQ 来的记忆要一眼能认出来（内容里混着别人的发言）
+          entry.origin === "qq" ? h("span", { style: styles.badge("identity") }, entry.umoLabel || t("origin.qq")) : null,
           entry.source === "manual" ? h("span", { style: styles.badge("identity") }, t("source.manual")) : null
         ),
         h("p", { style: styles.summary }, entry.summary || entry.user || ""),
@@ -485,6 +495,9 @@ window.__ModuleLoader__.load({
           h("span", { style: styles.badge(entry.kind) }, t(`kind.${entry.kind}`)),
           h("span", { style: styles.muted }, fmtTime(entry.t ?? entry.time)),
           h("span", { style: { ...styles.muted, marginLeft: "auto" } }, `${t("label.source")}：${t(`source.${entry.source ?? "rule"}`)}`),
+          entry.origin === "qq"
+            ? h("span", { style: styles.badge("identity") }, entry.umoLabel || t("origin.qq"))
+            : null,
           confirming
             ? h("button", { style: styles.dangerButton, onClick: () => onDelete(entry.id) }, t("btn.confirmDelete"))
             : h("button", { style: styles.button, onClick: () => setConfirming(true) }, t("btn.delete"))
@@ -725,6 +738,8 @@ window.__ModuleLoader__.load({
       const [list, setList] = useState([]);
       const [query, setQuery] = useState("");
       const [kind, setKind] = useState("");
+      // 来源筛选："" = 全部 | "local" = DSH 网页 | "qq" = QQ 桥接
+      const [scope, setScope] = useState("");
       const [detail, setDetail] = useState(null);
       const [noteOpen, setNoteOpen] = useState(false);
       const [noteText, setNoteText] = useState("");
@@ -751,10 +766,11 @@ window.__ModuleLoader__.load({
       const refresh = useCallback(async () => {
         const params = new URLSearchParams({ limit: "60" });
         if (kind !== "") params.set("kind", kind);
+        if (scope !== "") params.set("scope", scope);
         const data = await callApi(`/entries?${params.toString()}`);
         if (data.ok) setList(data.entries ?? []);
         else onError(data.error);
-      }, [kind, onError]);
+      }, [kind, scope, onError]);
 
       useEffect(() => {
         void (async () => {
@@ -783,7 +799,10 @@ window.__ModuleLoader__.load({
           kind: hit.kind,
           summary: hit.summary,
           keywords: hit.keywords,
-          source: "rule",
+          source: hit.source ?? "rule",
+          origin: hit.origin ?? "local",
+          umo: hit.umo ?? "",
+          umoLabel: hit.umoLabel ?? "",
         })));
         else onError(data.error);
       };
@@ -893,6 +912,21 @@ window.__ModuleLoader__.load({
             onClick: () => setKind(k),
           }, `${t(`kind.${k}`)} (${data.stats.byKind[k]})`))
         ),
+        // 来源筛选：只在确实有 QQ 记忆时才显示，否则是噪音
+        (data?.stats?.byOrigin?.qq ?? 0) > 0
+          ? h("div", { style: { display: "flex", gap: 6, padding: "6px 14px 0", flexWrap: "wrap", alignItems: "center" } },
+              h("span", { style: { ...styles.muted, fontSize: 11 } }, t("origin.label")),
+              ...[
+                { value: "", label: t("origin.all") },
+                { value: "local", label: `${t("origin.local")} (${data?.stats?.byOrigin?.local ?? 0})` },
+                { value: "qq", label: `${t("origin.qq")} (${data?.stats?.byOrigin?.qq ?? 0})` },
+              ].map((item) => h("button", {
+                key: item.value || "all",
+                style: { ...styles.button, borderColor: scope === item.value ? TOKEN.brand : TOKEN.border2 },
+                onClick: () => setScope(item.value),
+              }, item.label))
+            )
+          : null,
         h("div", { style: styles.body },
           h("div", { style: styles.listPane },
             h("div", { style: styles.scroll },
