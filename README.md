@@ -164,6 +164,68 @@ prompt 里给了判据（*这条信息三个月后还有用吗？*），代码�
 
 ---
 
+## 来源与隔离（QQ 桥接）
+
+记忆可能来自不同入口。目前支持两类：
+
+| 来源 | 判定方式 |
+|---|---|
+| `local` | DSH 网页 / 本地会话（默认） |
+| `qq` | 经 [dsh-astrbot-ingress](https://github.com/CCYellowStar2/dsh-astrbot-ingress) 桥接的 QQ 会话 |
+
+**为什么需要专门识别**：ingress 用 `ctx.agents.create()` 建会话，不带任何来源标记，
+从会话对象本身看不出它来自 QQ。但 ingress 会在
+`$DSH_HOME/dsh-astrbot-ingress/sessions.json` 里维护一张反查表：
+
+```json
+{ "<umo>": { "sessionId": "...", "cwd": "...", "chatType": "group", "senderId": "..." } }
+```
+
+我们读这张表反查 sessionId 的来源。**ingress 没装也不影响**——文件不存在就一律算 `local`。
+
+### 单向隔离
+
+```
+DSH 网页  ──能看到──▶  QQ 记忆
+QQ 会话   ──看不到──▶  DSH 网页记忆
+```
+
+群里聊的内容，你在网页里能翻到；但**群里看不到你在网页里说的话**。
+群是个多人环境，把工作对话漏进去不合适。
+
+实现上：QQ 会话检索时带 `originScope: "qq"`，主命中和"顺带想起"的延伸命中都过这道过滤。
+未标 `origin` 的存量数据按 `local` 处理，所以隔离对老数据也成立。
+
+要手动跨来源检索，工具带 `scope` 参数：
+
+```
+memory_search(query, scope)   # all（默认）| local | qq
+```
+
+面板上也有来源筛选，并且**只在确实有 QQ 记忆时才显示**——没桥接的用户看不到多余按钮。
+
+### 群聊内容的处理
+
+群里**别人的发言**也会被归档（都记，但打标签）：
+
+- 打上 `qq` + `astrbot` 标签，群聊额外打 `qq-group`，私聊打 `qq-private`
+- 条目记 `umo`（群号，或 `群号#u用户号`），面板上显示成「群 123456789 · 用户 987」
+- 记忆列表里一眼能认出哪些来自 QQ
+
+### 给存量数据补标
+
+来源识别是在归档那一刻做的。如果你**先装了记忆库、后装 ingress**，
+那段时间从 QQ 进来的会话会被误标成 `local`。补标：
+
+```bash
+node test/backfill-origin.mjs          # 预览
+node test/backfill-origin.mjs --apply  # 执行
+```
+
+只改 `origin` / `umo` / `tags` 三个字段，不动正文。
+
+---
+
 ## 历史回填
 
 `sessions/` 里已有的历史会话可以整个导进来，不用重新聊一遍。
@@ -199,7 +261,7 @@ prompt 里给了判据（*这条信息三个月后还有用吗？*），代码�
 
 侧栏底部「记忆女神」→ 全屏面板，四个页签：
 
-- **记忆** —— 搜索、筛类型、展开原文、手动记一条、导入历史、固化
+- **记忆** —— 搜索、筛类型、筛来源、展开原文、手动记一条、导入历史、固化
 - **人设框架** —— 看 AI 对你的认知，也能自己改；顶部有「让 AI 重新归纳」
 - **事实** —— 当前生效的稳定事实，可手动断言/失效
 - **召回预览** —— 输入一句话，看这轮实际会注入什么
@@ -210,7 +272,7 @@ prompt 里给了判据（*这条信息三个月后还有用吗？*），代码�
 
 | 工具 | 用途 |
 |---|---|
-| `memory_search` | 检索索引（返回摘要 + id，不含全文） |
+| `memory_search` | 检索索引（返回摘要 + id，不含全文）；可传 `scope` 限定来源 |
 | `memory_recall` | 按 id 取原文（摘要条目会连带展开轮次要点） |
 | `memory_note` | 手动记一条 |
 | `memory_profile` | 读/写人设框架 |
@@ -282,7 +344,7 @@ mnemosyne/
 
 ## 已验证 / 未验证
 
-自检 **115 项**（`node test/selftest.mjs`，纯离线，不碰真实库），另有实时验收脚本
+自检 **127 项**（115 项核心 + 12 项来源隔离）（`node test/selftest.mjs`，纯离线，不碰真实库），另有实时验收脚本
 （`node test/verify-live.mjs`，对着运行中的 DSH 打）。
 
 覆盖到：
@@ -336,6 +398,7 @@ mnemosyne/
 
 ```bash
 node test/selftest.mjs                  # 115 项离线自检
+node test/selftest-origin.mjs           # 12 项来源识别与隔离自检
 node test/preview.mjs "你那句话"         # 看注入效果（读真实库 + 当前源码，不用重启）
 node test/verify-live.mjs               # 对着运行中的 DSH 验收
 node test/backfill.mjs [会话数] [--dry] # 导入历史会话
