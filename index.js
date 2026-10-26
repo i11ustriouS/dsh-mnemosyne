@@ -14,6 +14,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createStore, newEntryId, emptyProfile, normalizeProfile } from "./lib/store.js";
+import { ORIGIN, describeUmo, resolveOrigin } from "./lib/origin.js";
 import { createRecall, renderCard, renderTimeline } from "./lib/recall.js";
 import { clampText, compactText, detectKind, extractEntities, kindLabel, ruleSummary, topKeywords } from "./lib/text.js";
 import { fallbackSummary, renderHitLines, renderInjection, summarizeWithLlm } from "./lib/summarize.js";
@@ -674,11 +675,16 @@ export function apply(ctx, rawConfig) {
     const data = extractTurn(session, turn);
     if (data === null) return;
     const fallback = fallbackSummary(data);
+    // 来源识别：QQ 桥接进来的会话在 ingress 的 sessions.json 里有反查表，
+    // 命中就打上 qq 相关标签并记下 umo（群号/用户号），供检索隔离与筛选。
+    const sessionId = typeof session?.id === "string" ? session.id : "";
+    const originInfo = resolveOrigin(sessionId, resolveDshHome());
+    const tags = originInfo.tags.length > 0 ? [...originInfo.tags] : [];
     const entry = {
       id: newEntryId(data.t),
       t: data.t,
-      sessionId: typeof session?.id === "string" ? session.id : "",
-      sessionTitle: sessionTitleOf(session, ctx.get?.("sessionTitle")),
+      sessionId,
+      sessionTitle: sessionTitleOf(session, ctx.get?.("sessionTitle")) || (originInfo.umo !== "" ? describeUmo(originInfo.umo) : ""),
       turn,
       kind: fallback.kind,
       user: data.user,
@@ -686,6 +692,9 @@ export function apply(ctx, rawConfig) {
       summary: fallback.summary,
       keywords: fallback.keywords,
       entities: fallback.entities,
+      tags,
+      origin: originInfo.origin,
+      umo: originInfo.umo,
       source: "rule",
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -745,7 +754,11 @@ export function apply(ctx, rawConfig) {
     const session = agent.session;
     const query = lastHumanQuery(session);
     const sessionId = typeof session?.id === "string" ? session.id : "";
-    const cacheKey = `${sessionId}:${query?.seq ?? 0}:${recall.size()}`;
+    // 单向隔离：QQ 会话只召回 QQ 自己的记忆，看不到 DSH 网页里的对话。
+    // 反过来（DSH 侧）不设限，所以是单向的 —— 网页里能翻到群里说过什么，群里看不到你在网页里的工作。
+    const originInfo = resolveOrigin(sessionId, resolveDshHome());
+    const originScope = originInfo.origin === ORIGIN.QQ ? ORIGIN.QQ : null;
+    const cacheKey = `${sessionId}:${query?.seq ?? 0}:${recall.size()}:${originScope ?? "all"}`;
     const cached = injectionCache.get(cacheKey);
     const now = Date.now();
     if (cached !== undefined && now - cached.at < 30000) return cached.text;
@@ -753,7 +766,7 @@ export function apply(ctx, rawConfig) {
     let text = "";
     try {
       if (query !== null) {
-        const result = recall.recall(query.text, { now, limit: cfg.maxRecall });
+        const result = recall.recall(query.text, { now, limit: cfg.maxRecall, originScope });
         text = renderInjection({
           profile,
           recall: result,
@@ -764,9 +777,14 @@ export function apply(ctx, rawConfig) {
         });
       } else {
         // 新会话、还没有提问：给人设框架 + 最近记忆（标了 test 的自检数据不注入）
+        // 同样受单向隔离约束：QQ 新会话不该看到 DSH 网页里的最近对话
+        const recent = store.listEntries()
+          .filter((entry) => !(entry.tags ?? []).includes("test"))
+          .filter((entry) => originScope === null || (entry.origin ?? ORIGIN.LOCAL) === originScope)
+          .slice(0, 5);
         text = renderInjection({
           profile,
-          recent: store.listEntries().filter((entry) => !(entry.tags ?? []).includes("test")).slice(0, 5),
+          recent,
           topics: ensureTopics(),
           facts: activeFacts(),
           maxChars: cfg.maxInjectChars,
@@ -797,18 +815,28 @@ export function apply(ctx, rawConfig) {
     keywords: hit.entry.keywords.slice(0, 6),
     entities: hit.entry.entities.slice(0, 6),
     sessionTitle: hit.entry.sessionTitle,
+    // 来源：让模型和面板都知道这条记忆是从哪来的（DSH 网页 / QQ 桥）
+    origin: hit.entry.origin ?? ORIGIN.LOCAL,
+    umo: hit.entry.umo ?? "",
+    umoLabel: describeUmo(hit.entry.umo ?? ""),
+    tags: hit.entry.tags ?? [],
     reasons: hit.reasons,
   });
 
   ctx.effect(() => ctx.tools.register({
     name: "memory_search",
     description:
-      "在长期记忆里检索过去的对话。返回按相关度排序的记忆索引（时间、类型、摘要、关键词、id），不含全文；需要细节再用 memory_recall(id) 取原文。可用于回答「上次说的那个」「之前那个项目」之类的问题。",
+      "在长期记忆里检索过去的对话。返回按相关度排序的记忆索引（时间、类型、摘要、关键词、id），不含全文；需要细节再用 memory_recall(id) 取原文。可用于回答「上次说的那个」「之前那个项目」之类的问题。记忆可能来自不同入口（DSH 网页对话、经 AstrBot 桥接的 QQ 会话）；在 QQ 会话里默认只搜 QQ 自己的记忆，要翻网页里的对话需显式传 scope=all。",
     parameters: {
       type: "object",
       properties: {
         query: { type: "string", description: "检索内容：关键词、项目名、事件描述都可以，中文原文即可。" },
         limit: { type: "integer", description: "返回条数，默认 8，最大 20。" },
+        scope: {
+          type: "string",
+          enum: ["all", "local", "qq"],
+          description: "来源范围：all 全部（默认）；local 只搜 DSH 网页里的对话；qq 只搜 QQ 桥接进来的对话。",
+        },
       },
       required: ["query"],
       additionalProperties: false,
@@ -853,7 +881,11 @@ export function apply(ctx, rawConfig) {
       init();
       const query = typeof args?.query === "string" ? args.query : "";
       const limit = Math.min(20, Math.max(1, Number(args?.limit) || cfg.maxRecall));
-      const result = recall.recall(query, { limit });
+      // scope 允许手动跨来源检索：默认在 QQ 会话里只搜 QQ 记忆（单向隔离），
+      // 显式传 all 才能翻到 DSH 网页里的对话。DSH 侧默认就是 all。
+      const scope = typeof args?.scope === "string" ? args.scope : "";
+      const originScope = scope === "qq" ? ORIGIN.QQ : scope === "local" ? ORIGIN.LOCAL : null;
+      const result = recall.recall(query, { limit, originScope });
       return {
         query,
         total: result.all.length,
@@ -1159,9 +1191,15 @@ export function apply(ctx, rawConfig) {
     init();
     const stats = store.stats();
     const entries = store.listEntries();
+    // 来源分布：面板要显示"这些记忆分别来自哪里"
+    const byOrigin = {};
+    for (const entry of entries) {
+      const origin = entry.origin ?? ORIGIN.LOCAL;
+      byOrigin[origin] = (byOrigin[origin] ?? 0) + 1;
+    }
     return {
       ok: true,
-      stats,
+      stats: { ...stats, byOrigin },
       dir: root,
       profile: normalizeProfile(profile),
       persona: personaState,
@@ -1177,6 +1215,8 @@ export function apply(ctx, rawConfig) {
         keywords: entry.keywords.slice(0, 6),
         sessionTitle: entry.sessionTitle,
         source: entry.source,
+        origin: entry.origin ?? ORIGIN.LOCAL,
+        umo: entry.umo ?? "",
       })),
     };
   };
@@ -1197,7 +1237,12 @@ export function apply(ctx, rawConfig) {
           init();
           const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit")) || 30));
           const kind = url.searchParams.get("kind") ?? "";
-          const entries = store.listEntries().filter((entry) => kind === "" || entry.kind === kind).slice(0, limit);
+          // 面板可按来源筛选：all（默认）| local | qq
+          const scope = url.searchParams.get("scope") ?? "";
+          const entries = store.listEntries()
+            .filter((entry) => kind === "" || entry.kind === kind)
+            .filter((entry) => scope === "" || scope === "all" || (entry.origin ?? ORIGIN.LOCAL) === scope)
+            .slice(0, limit);
           return json(res, 200, {
             ok: true,
             entries: entries.map((entry) => ({
@@ -1209,6 +1254,10 @@ export function apply(ctx, rawConfig) {
               entities: entry.entities.slice(0, 6),
               sessionTitle: entry.sessionTitle,
               source: entry.source,
+              origin: entry.origin ?? ORIGIN.LOCAL,
+              umo: entry.umo ?? "",
+              umoLabel: describeUmo(entry.umo ?? ""),
+              tags: entry.tags ?? [],
               user: clampText(entry.user, 400),
               assistant: clampText(entry.assistant, 400),
             })),
@@ -1220,7 +1269,9 @@ export function apply(ctx, rawConfig) {
           init();
           const query = typeof body.query === "string" ? body.query : "";
           const limit = Math.min(50, Math.max(1, Number(body.limit) || cfg.maxRecall));
-          const result = recall.recall(query, { limit });
+          const scope = typeof body.scope === "string" ? body.scope : "";
+          const originScope = scope === "qq" ? ORIGIN.QQ : scope === "local" ? ORIGIN.LOCAL : null;
+          const result = recall.recall(query, { limit, originScope });
           return json(res, 200, {
             ok: true,
             total: result.all.length,
