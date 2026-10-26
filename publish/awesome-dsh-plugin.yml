@@ -1,10 +1,3 @@
-# Mnemosyne — DSH 官方插件库投稿条目
-#
-# 提交方式：给 awesome-dsh-plugin/awesome-dsh-plugin 提 PR，
-# 新增文件 data/plugins/i11ustriouS__dsh-mnemosyne.yml
-#
-# 注意：description 含 ": "（冒号+空格）时必须加引号，否则 YAML 解析失败。
-
 url: https://github.com/i11ustriouS/dsh-mnemosyne
 name: i11ustriouS/dsh-mnemosyne
 category: memory
